@@ -39,3 +39,6 @@ out/
 ### Kotlin ###
 .kotlin
 /src/main/resources/application.properties
+
+### Dev ###
+.gitmessage.txt

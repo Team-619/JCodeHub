@@ -1,44 +1,62 @@
 package org.jbnu.jdevops.jcodeportallogin.controller
 
-import jakarta.servlet.http.Cookie
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
-import org.jbnu.jdevops.jcodeportallogin.repo.UserRepository
-import org.jbnu.jdevops.jcodeportallogin.service.JwtService
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
-import org.springframework.security.oauth2.core.oidc.user.OidcUser
-import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.GetMapping
+import org.jbnu.jdevops.jcodeportallogin.dto.LoginUserDto
+import org.jbnu.jdevops.jcodeportallogin.dto.RegisterUserDto
+import org.jbnu.jdevops.jcodeportallogin.service.*
+import org.jbnu.jdevops.jcodeportallogin.util.JwtUtil
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.*
 
-@Controller
+@Tag(name = "Auth API", description = "인증 및 회원가입 관련 API")
+@RestController
+@RequestMapping("/api/auth")
 class AuthController(
-    private val userRepository: UserRepository,
-    private val jwtService: JwtService
+    private val authService: AuthService,
+    private val userService: UserService
 ) {
+    // 일반 회원가입
+    @Operation(summary = "일반 회원가입", description = "사용자가 일반 회원가입을 요청합니다.")
+    @PostMapping("/signup")
+    fun register(@RequestBody registerUserDto: RegisterUserDto): ResponseEntity<String> {
+        return userService.register(registerUserDto)
+    }
 
-    @GetMapping("/login/success")
-    fun loginSuccess(authentication: OAuth2AuthenticationToken, response: HttpServletResponse): String {
-        val oidcUser = authentication.principal as OidcUser
-        val email = oidcUser.email
+    // 일반 로그인 ( ADMIN, PROFESSOR, ASSISTANT )
+    @Operation(
+        summary = "일반 로그인",
+        description = "ADMIN, PROFESSOR, ASSISTANT 역할의 사용자가 일반 로그인을 수행합니다. 인증 후 JWT 토큰이 발급됩니다."
+    )
+    @PostMapping("/login/basic")
+    fun basicLogin(@RequestBody loginUserDto: LoginUserDto, response: HttpServletResponse): ResponseEntity<Map<String, String>> {
+        val result = authService.basicLogin(loginUserDto)
+        response.addCookie(JwtUtil.createJwtCookie("jwt_auth", result["token"] ?: ""))
+        return ResponseEntity.ok(result)
+    }
 
-        // 데이터베이스에서 사용자 정보를 가져옴
-        val user = userRepository.findByEmail(email) ?: throw ResponseStatusException(HttpStatus.FORBIDDEN, "User not found")
+    // KeyCloak 로그인 ( STUDENT )
+    @Operation(
+        summary = "KeyCloak 로그인 (STUDENT)",
+        description = "STUDENT 역할의 사용자가 KeyCloak을 통해 로그인을 수행합니다. 인증된 사용자의 이메일과 역할 정보를 기반으로 로그인 처리를 진행합니다."
+    )
+    @GetMapping("/login/oidc/success")
+    fun loginOidcSuccess(
+        authentication: Authentication,
+        response: HttpServletResponse
+    ): ResponseEntity<Map<String, String>> {
 
-        // JWT 토큰 생성
-        val jwt = jwtService.createToken(email, user.url)
+        val email = authentication.principal as? String
+            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing email in authentication")
 
-        // JWT 토큰을 쿠키로 설정
-        val cookie = Cookie("jwt", jwt)
-        cookie.isHttpOnly = true
-        cookie.secure = true
-        cookie.path = "/"
-        cookie.maxAge = 3600  // 쿠키의 유효 기간 설정 (1시간)
+        val roles = authentication.authorities.map { it.authority }
 
-        response.addCookie(cookie)
-
-        // Node.js 서버로 리다이렉션
-        return "redirect:https://jcode.jbnu.ac.kr/jcode/?folder=/config/workspace"
+        // 기존 서비스 로직 유지
+        val result = authService.oidcLogin(email, roles)
+        return ResponseEntity.ok(result)
     }
 }
-
