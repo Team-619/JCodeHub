@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets
 @Tag(name = "Redirect API", description = "JCode(Node.js 서버)로의 리다이렉션 관련 API")
 @RestController
 @RequestMapping("/api/redirect")
-class RedirectController {
+class RedirectController(private val jwtUtil: JwtUtil) {
 
     @Value("\${nodejs.url}")  // 환경 변수에서 Node.js URL 가져오기
     private lateinit var nodeJsUrl: String
@@ -48,7 +48,7 @@ class RedirectController {
         println(finalNodeJsUrl)
 
         // Keycloak Access Token을 HTTP-Only Secure 쿠키로 설정
-        response.addCookie(JwtUtil.createJwtCookie("jwt", token))
+        response.addCookie(jwtUtil.createJwtCookie("jwt", token))
 
         // 클라이언트를 Node.js 서버로 리다이렉트
         response.sendRedirect(finalNodeJsUrl)

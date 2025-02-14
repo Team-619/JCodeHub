@@ -2,10 +2,13 @@ package org.jbnu.jdevops.jcodeportallogin.util
 
 import jakarta.servlet.http.Cookie
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
-object JwtUtil {
+@Component
+class JwtUtil (
     @Value("\${jwt.cookie.domain}")
-    private lateinit var cookieDomain: String
+    private val cookieDomain: String
+) {
 
     fun createJwtCookie(name: String, jwt: String): Cookie {
         return Cookie(name, jwt).apply {

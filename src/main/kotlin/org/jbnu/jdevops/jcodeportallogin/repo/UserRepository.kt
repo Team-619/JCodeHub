@@ -1,5 +1,6 @@
 package org.jbnu.jdevops.jcodeportallogin.repo
 
+import org.jbnu.jdevops.jcodeportallogin.entity.RoleType
 import org.jbnu.jdevops.jcodeportallogin.entity.User
 import org.jbnu.jdevops.jcodeportallogin.entity.UserCourses
 import org.springframework.data.jpa.repository.JpaRepository

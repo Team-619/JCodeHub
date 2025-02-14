@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/auth")
 class AuthController(
     private val authService: AuthService,
-    private val userService: UserService
+    private val userService: UserService,
+    private val jwtUtil: JwtUtil
 ) {
     // 일반 회원가입
     @Operation(summary = "일반 회원가입", description = "사용자가 일반 회원가입을 요청합니다.")
@@ -35,7 +36,7 @@ class AuthController(
     @PostMapping("/login/basic")
     fun basicLogin(@RequestBody loginUserDto: LoginUserDto, response: HttpServletResponse): ResponseEntity<Map<String, String>> {
         val result = authService.basicLogin(loginUserDto)
-        response.addCookie(JwtUtil.createJwtCookie("jwt_auth", result["token"] ?: ""))
+        response.addCookie(jwtUtil.createJwtCookie("jwt_auth", result["token"] ?: ""))
         return ResponseEntity.ok(result)
     }
 

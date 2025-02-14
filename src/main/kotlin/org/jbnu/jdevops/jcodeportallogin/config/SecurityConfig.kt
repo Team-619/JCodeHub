@@ -3,6 +3,7 @@ package org.jbnu.jdevops.jcodeportallogin.config
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpSessionEvent
 import jakarta.servlet.http.HttpSessionListener
+import org.jbnu.jdevops.jcodeportallogin.security.CustomAuthenticationSuccessHandler
 import org.jbnu.jdevops.jcodeportallogin.security.KeycloakAuthFilter
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -25,9 +26,14 @@ class SecurityConfig {
     private lateinit var nodejsDomain: String
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity, keycloakAuthFilter: KeycloakAuthFilter): SecurityFilterChain {
+    fun securityFilterChain(http: HttpSecurity, keycloakAuthFilter: KeycloakAuthFilter,
+                            customAuthenticationSuccessHandler: CustomAuthenticationSuccessHandler
+    ): SecurityFilterChain {
         http
-            .csrf { it.disable() }  // CSRF 보호 비활성화
+            // CSRF 보호 활성화하되, API 경로는 CSRF 검증에서 제외 (필요에 따라 조정)
+            .csrf { csrf ->
+                csrf.ignoringRequestMatchers("/api/**")
+            }
             .cors { cors ->
                 cors.configurationSource {
                     val configuration = CorsConfiguration()
@@ -41,6 +47,7 @@ class SecurityConfig {
             }
             .authorizeHttpRequests { authz ->
                 authz
+                    .requestMatchers("/login", "/error", "/oauth2/**").permitAll()
                     .requestMatchers("/api/auth/signup", "/api/auth/login/basic", "/api/auth/login/oidc/success").permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/api/user/info", "/api/user/courses", "/api/user/**").permitAll()  // 임시
@@ -50,9 +57,20 @@ class SecurityConfig {
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().authenticated()  // 모든 요청에 대해 인증 요구
             }
+            .oauth2Login { oauth2 ->
+                // 기본 성공 URL 대신 커스텀 성공 핸들러 사용
+                oauth2.successHandler(customAuthenticationSuccessHandler)
+            }
+            .logout { logout ->
+                logout
+                    .logoutUrl("/logout")
+                    .logoutSuccessUrl("/")
+                    .invalidateHttpSession(true)
+                    .deleteCookies("JSESSIONID")
+            }
             .sessionManagement { sessionManagement ->
-                sessionManagement
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // API 요청은 JWT 인증 (세션 X)
+                sessionManagement.sessionFixation { it.migrateSession() }  // 세션 고정 보호
+                sessionManagement.maximumSessions(1)  // 동시 세션 1개로 제한
             }
             // JWT 기반 인증 필터 추가 (Keycloak 검증)
             .addFilterBefore(keycloakAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
