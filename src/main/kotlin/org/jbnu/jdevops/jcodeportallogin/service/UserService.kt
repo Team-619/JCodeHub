@@ -78,7 +78,7 @@ class UserService(
         val userCourses = user.courses
         return userCourses.map {
             UserCoursesDto(
-                courseId = it.course.courseId,
+                courseId = it.course.id,
                 courseName = it.course.name,
                 courseCode = it.course.code,
                 courseProfessor = it.course.professor,
@@ -94,9 +94,9 @@ class UserService(
         val user = userRepository.findByEmail(email)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with email: $email")
 
-        return jcodeRepository.findByUser(user).map {
+        return jcodeRepository.findByUserId(user.id).map {
             JCodeDto(
-                jcodeId = it.jcodeId,
+                jcodeId = it.id,
                 courseName = it.course.name,
                 jcodeUrl = it.jcodeUrl
             )
@@ -108,12 +108,12 @@ class UserService(
         val user = userRepository.findByEmail(email)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with email: $email")
 
-        return userCoursesRepository.findByUser(user).map {
-            val assignments = assignmentRepository.findByCourse_CourseId(it.course.courseId)
-            val jcode = jcodeRepository.findByUserAndCourse(user, it.course)
+        return userCoursesRepository.findByUserId(user.id).map {
+            val assignments = assignmentRepository.findByCourseId(it.course.id)
+            val jcode = jcodeRepository.findByUserIdAndCourseId(user.id, it.course.id)
 
             UserCourseDetailsDto(
-                courseId = it.course.courseId,
+                courseId = it.course.id,
                 courseName = it.course.name,
                 courseCode = it.course.code,
                 courseProfessor = it.course.professor,
@@ -122,7 +122,7 @@ class UserService(
                 courseYear = it.course.year,
                 assignments = assignments.map { assignment ->
                     AssignmentDto(
-                        assignmentId = assignment.assignmentId,
+                        assignmentId = assignment.id,
                         assignmentName = assignment.name,
                         assignmentDescription = assignment.description,
                         createdAt = assignment.createdAt.toString(),
@@ -159,7 +159,7 @@ class UserService(
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
 
         // 중복 가입 방지
-        if (userCoursesRepository.existsByUserAndCourse(user, course)) {
+        if (userCoursesRepository.existsByUserIdAndCourseId(user.id, course.id)) {
             throw ResponseStatusException(HttpStatus.CONFLICT, "User already enrolled in this course")
         }
 
@@ -172,7 +172,7 @@ class UserService(
         userCoursesRepository.save(userCourse)
 
         // DB 저장 후 Redis 데이터 동기화: 강의 코드와 강의 분반(clss)을 함께 사용
-        val storedUserCourse = userCoursesRepository.findByUserAndCourseCode(user, course.code)
+        val storedUserCourse = userCoursesRepository.findByUserIdAndCourseCode(user.id, course.code)
         if (storedUserCourse != null) {
             redisService.addUserToCourseList(course.code, course.clss, email)
         }
@@ -186,7 +186,7 @@ class UserService(
         val course = courseRepository.findById(courseId)
             .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found") }
 
-        val userCourse = userCoursesRepository.findByUserAndCourse(user, course)
+        val userCourse = userCoursesRepository.findByUserIdAndCourseId(user.id, course.id)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User is not enrolled in this course")
 
         // 해당 강의에서 사용된 JCode 삭제
@@ -208,14 +208,14 @@ class UserService(
 
     @Transactional(readOnly = true)
     fun getUserById(userId: Long): UserDto? {
-        val user = userRepository.findByUserId(userId)
+        val user = userRepository.findById(userId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: $userId")
         return user.toDto()
     }
 
     @Transactional
     fun deleteUser(userId: Long) {
-        val user = userRepository.findByUserId(userId)
+        val user = userRepository.findById(userId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: $userId")
         userRepository.delete(user)
     }

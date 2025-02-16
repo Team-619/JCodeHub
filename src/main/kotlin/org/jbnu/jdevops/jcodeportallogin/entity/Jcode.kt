@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 @Table(name = "jcode")
 data class Jcode(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val jcodeId: Long = 0,
+    val id: Long = 0,
 
     @ManyToOne
     @JoinColumn(name = "user_course_id", nullable = false)  // UserCourses 엔티티와 매핑

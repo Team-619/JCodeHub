@@ -23,11 +23,13 @@ class JCodeService(
         val course = courseRepository.findById(courseId)
             .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found") }
 
-        val user = userRepository.findByUserId(userId)
+        val user = userRepository.findById(userId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
 
-        val userCourse = userCoursesRepository.findByUserAndCourse(user, course)
+        val userCourse = userCoursesRepository.findByUserIdAndCourseId(user.id, course.id)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "UserCourse not found")
+
+
 
         val jCode = jCodeRepository.save(
             Jcode(
@@ -43,13 +45,13 @@ class JCodeService(
         userCoursesRepository.save(updatedUserCourse)
 
         // DB 저장 후 Redis 동기화
-        val storedJcode = jCodeRepository.findByUserAndCourse(user, course)
+        val storedJcode = jCodeRepository.findByUserIdAndCourseId(user.id, course.id)
         if (storedJcode != null) {
             redisService.storeUserCourse(user.email, course.code, course.clss, jcodeUrl)
         }
 
         return JCodeDto(
-            jcodeId = jCode.jcodeId,
+            jcodeId = jCode.id,
             jcodeUrl = jCode.jcodeUrl,
             courseName = jCode.course.name
         )
@@ -57,12 +59,12 @@ class JCodeService(
 
     // JCode 삭제 (관리자 전용)
     fun deleteJCode(userId: Long, courseId: Long) {
-        val user = userRepository.findByUserId(userId)
+        val user = userRepository.findById(userId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
         val course = courseRepository.findById(courseId)
             .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found") }
 
-        val jCode = jCodeRepository.findByUserAndCourse(user, course)
+        val jCode = jCodeRepository.findByUserIdAndCourseId(user.id, course.id)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "JCode not found for the specified user and course")
 
         jCodeRepository.delete(jCode)

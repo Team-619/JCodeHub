@@ -23,7 +23,7 @@ class CourseService(
 ) {
     // 강의별 유저 조회
     fun getUsersByCourse(courseId: Long): List<UserInfoDto> {
-        val userCourses = userCoursesRepository.findByCourse_CourseId(courseId)
+        val userCourses = userCoursesRepository.findByCourseId(courseId)
 
         if (userCourses.isEmpty()) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "No users found for this course")
@@ -32,7 +32,7 @@ class CourseService(
         return userCourses.map {
             val user = it.user
             UserInfoDto(
-                userId = user.userId,
+                userId = user.id,
                 email = user.email,
                 role = user.role,
                 studentNum = user.studentNum
@@ -42,7 +42,7 @@ class CourseService(
 
     // 강의별 과제 조회
     fun getAssignmentsByCourse(courseId: Long): List<AssignmentDto> {
-        val assignments = assignmentRepository.findByCourse_CourseId(courseId)
+        val assignments = assignmentRepository.findByCourseId(courseId)
 
         if (assignments.isEmpty()) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "No assignments found for this course")
@@ -50,7 +50,7 @@ class CourseService(
 
         return assignments.map {
             AssignmentDto(
-                assignmentId = it.assignmentId,
+                assignmentId = it.id,
                 assignmentName = it.name,
                 assignmentDescription = it.description,
                 createdAt = it.createdAt.toString(),
@@ -92,7 +92,7 @@ class CourseService(
             courseKey = encryptedKey
         ))
         return CourseDto(
-            courseId = course.courseId,
+            courseId = course.id,
             name = course.name,
             code = course.code,
             professor = course.professor,
@@ -110,7 +110,7 @@ class CourseService(
         val updatedCourse = course.copy(name = courseDto.name, code = courseDto.code)
         courseRepository.save(updatedCourse)
         return CourseDto(
-            courseId = updatedCourse.courseId,
+            courseId = updatedCourse.id,
             name = updatedCourse.name,
             code = updatedCourse.code,
             professor = updatedCourse.professor,

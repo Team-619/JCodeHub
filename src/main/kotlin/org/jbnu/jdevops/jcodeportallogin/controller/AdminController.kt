@@ -38,7 +38,7 @@ class AdminController(private val userService: UserService) {
     @Operation(summary = "조교 계정 추가", description = "관리자가 조교 계정을 추가합니다.")
     @PostMapping("/assistant")
     fun registerAssistant(@RequestBody registerUserDto: RegisterUserDto): ResponseEntity<String> {
-        val assistantDto = registerUserDto.copy(role = RoleType.ASSISTANCE)
+        val assistantDto = registerUserDto.copy(role = RoleType.ASSISTANT)
         return userService.register(assistantDto)
     }
 

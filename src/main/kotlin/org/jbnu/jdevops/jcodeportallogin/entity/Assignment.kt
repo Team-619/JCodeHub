@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 @Table(name = "assignment")
 data class Assignment(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val assignmentId: Long = 0,
+    val id: Long = 0,
 
     @ManyToOne
     @JoinColumn(name = "course_id", nullable = false)

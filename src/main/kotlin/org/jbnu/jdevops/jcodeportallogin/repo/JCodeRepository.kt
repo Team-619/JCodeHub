@@ -7,7 +7,7 @@ import org.jbnu.jdevops.jcodeportallogin.entity.UserCourses
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface JCodeRepository : JpaRepository<Jcode, Long> {
-    fun findByUser(user: User): List<Jcode>
-    fun findByUserAndCourse(user: User, course: Course): Jcode?
+    fun findByUserId(userId: Long): List<Jcode>
+    fun findByUserIdAndCourseId(userId: Long, courseId: Long): Jcode?
     fun findByUserCourse(userCourse: UserCourses): Jcode?
 }

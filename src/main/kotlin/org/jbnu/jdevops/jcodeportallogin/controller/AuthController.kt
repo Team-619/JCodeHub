@@ -2,15 +2,14 @@ package org.jbnu.jdevops.jcodeportallogin.controller
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.jbnu.jdevops.jcodeportallogin.dto.LoginUserDto
 import org.jbnu.jdevops.jcodeportallogin.dto.RegisterUserDto
 import org.jbnu.jdevops.jcodeportallogin.service.*
 import org.jbnu.jdevops.jcodeportallogin.util.JwtUtil
-import org.springframework.web.server.ResponseStatusException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "Auth API", description = "인증 및 회원가입 관련 API")
@@ -40,24 +39,24 @@ class AuthController(
         return ResponseEntity.ok(result)
     }
 
-    // KeyCloak 로그인 ( STUDENT )
+    @GetMapping("/token")
+    fun getAccessToken(request: HttpServletRequest): ResponseEntity<Map<String, String>> {
+        val accessToken = authService.getAccessToken(request)
+        return ResponseEntity.ok(mapOf("accessToken" to accessToken))
+    }
+
+    // jwt token refresh
+    @PostMapping("/refresh")
     @Operation(
-        summary = "KeyCloak 로그인 (STUDENT)",
-        description = "STUDENT 역할의 사용자가 KeyCloak을 통해 로그인을 수행합니다. 인증된 사용자의 이메일과 역할 정보를 기반으로 로그인 처리를 진행합니다."
+        summary = "JWT 토큰 리프레시",
+        description = "HTTP 요청에 포함된 refresh token 쿠키를 검증하여, 유효할 경우 새로운 Access 토큰(응답 헤더)과 Refresh 토큰(쿠키)을 발급합니다."
     )
-    @GetMapping("/login/oidc/success")
-    fun loginOidcSuccess(
-        authentication: Authentication,
-        response: HttpServletResponse
-    ): ResponseEntity<Map<String, String>> {
-
-        val email = authentication.principal as? String
-            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing email in authentication")
-
-        val roles = authentication.authorities.map { it.authority }
-
-        // 기존 서비스 로직 유지
-        val result = authService.oidcLogin(email, roles)
-        return ResponseEntity.ok(result)
+    fun refreshToken(request: HttpServletRequest, response: HttpServletResponse): ResponseEntity<Map<String, String>> {
+        return try {
+            val result = authService.refreshTokens(request, response)
+            ResponseEntity.ok(result)
+        } catch (ex: Exception) {
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to ex.message!!))
+        }
     }
 }

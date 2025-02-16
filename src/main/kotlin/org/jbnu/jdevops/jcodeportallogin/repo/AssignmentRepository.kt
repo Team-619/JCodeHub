@@ -4,5 +4,5 @@ import org.jbnu.jdevops.jcodeportallogin.entity.Assignment
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface AssignmentRepository : JpaRepository<Assignment, Long> {
-    fun findByCourse_CourseId(courseId: Long): List<Assignment>
+    fun findByCourseId(courseId: Long): List<Assignment>
 }

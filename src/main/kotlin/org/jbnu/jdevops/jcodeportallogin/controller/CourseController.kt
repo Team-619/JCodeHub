@@ -17,7 +17,6 @@ class CourseController(
     private val courseService: CourseService
 ) {
     // 강의별 유저 조회
-
     @Operation(
         summary = "강의별 유저 조회",
         description = "특정 강의에 등록된 모든 사용자 정보를 조회합니다."

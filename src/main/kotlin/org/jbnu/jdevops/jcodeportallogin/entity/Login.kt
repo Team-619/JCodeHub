@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 @Table(name = "login")
 data class Login(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val loginId: Long = 0,
+    val id: Long = 0,
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)

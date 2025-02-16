@@ -22,7 +22,7 @@ class AssignmentService(
 
         val assignment = assignmentRepository.save(Assignment(name = assignmentDto.assignmentName, description = assignmentDto.assignmentDescription, course = course))
         return AssignmentDto(
-            assignmentId = assignment.assignmentId,
+            assignmentId = assignment.id,
             assignmentName = assignment.name,
             assignmentDescription = assignment.description,
             createdAt = assignment.createdAt.toString(),
@@ -47,7 +47,7 @@ class AssignmentService(
         assignmentRepository.save(updatedAssignment)
 
         return AssignmentDto(
-            assignmentId = assignment.assignmentId,
+            assignmentId = assignment.id,
             assignmentName = updatedAssignment.name,
             assignmentDescription = updatedAssignment.description,
             createdAt = updatedAssignment.createdAt.toString(),

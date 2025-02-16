@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 @Table(name = "user")
 data class User(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val userId: Long = 0,  // JPA가 자동으로 설정
+    val id: Long = 0,  // JPA가 자동으로 설정
 
     @Column(nullable = false, unique = true)
     val email: String,

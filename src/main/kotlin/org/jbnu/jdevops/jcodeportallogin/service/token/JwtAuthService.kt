@@ -11,7 +11,9 @@ import java.util.*
 @Service
 class JwtAuthService(
     @Value("\${jwt.secret}") private val secretKey: String,
-    @Value("\${jwt.expire}") private val expireTime: Long
+    @Value("\${jwt.expire}") private val expireTime: Long,
+    @Value("\${jwt.secret}") private val refreshSecretKey: String,
+    @Value("\${jwt.expire}") private val refreshExpireTime: Long
 ) {
 
     fun createToken(email: String, role: RoleType): String {
@@ -25,6 +27,20 @@ class JwtAuthService(
             .setClaims(claims)
             .setIssuedAt(Date())
             .setExpiration(Date(System.currentTimeMillis() + expireTime))
+            .signWith(key)
+            .compact()
+    }
+
+    fun createRefreshToken(email: String, role: RoleType): String {
+        val key = Keys.hmacShaKeyFor(refreshSecretKey.toByteArray())
+
+        val claims = Jwts.claims().setSubject(email)
+        claims["role"] = role
+
+        return Jwts.builder()
+            .setClaims(claims)
+            .setIssuedAt(Date())
+            .setExpiration(Date(System.currentTimeMillis() + refreshExpireTime))
             .signWith(key)
             .compact()
     }
@@ -48,6 +64,19 @@ class JwtAuthService(
         return try {
             val claims = Jwts.parserBuilder()
                 .setSigningKey(secretKey.toByteArray())
+                .build()
+                .parseClaimsJws(token)
+
+            !claims.body.expiration.before(Date())
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun validateRefreshToken(token: String): Boolean {
+        return try {
+            val claims = Jwts.parserBuilder()
+                .setSigningKey(refreshSecretKey.toByteArray())
                 .build()
                 .parseClaimsJws(token)
 

@@ -36,4 +36,50 @@ class RedisService(
         val key = "course:$courseCode:$courseClss:participants"
         redisTemplate.opsForSet().remove(key, email)
     }
+
+    // id_token을 하나의 Redis 해시로 저장 (key: "user:id_tokens", field: 이메일, value: id_token)
+    fun storeIdToken(email: String, idToken: String) {
+        val hashKey = "user:id_tokens"
+        redisTemplate.opsForHash<String, String>().put(hashKey, email, idToken)
+        // 해시 전체에 TTL을 설정하고 싶다면, 해시 key에 TTL을 부여할 수 있습니다.
+        // redisTemplate.expire(hashKey, 1, TimeUnit.HOURS)
+    }
+
+    fun getIdToken(email: String): String? {
+        val hashKey = "user:id_tokens"
+        return redisTemplate.opsForHash<String, String>().get(hashKey, email)
+    }
+
+    fun deleteIdToken(email: String) {
+        val hashKey = "user:id_tokens"
+        redisTemplate.opsForHash<String, String>().delete(hashKey, email)
+    }
+
+    // refresh token을 하나의 Redis 해시로 관리 (key: "user:refresh_tokens", field: 이메일, value: refresh token)
+    fun storeRefreshToken(email: String, refreshToken: String) {
+        val hashKey = "user:refresh_tokens"
+        redisTemplate.opsForHash<String, String>().put(hashKey, email, refreshToken)
+    }
+
+    fun getRefreshToken(email: String): String? {
+        val hashKey = "user:refresh_tokens"
+        return redisTemplate.opsForHash<String, String>().get(hashKey, email)
+    }
+
+    fun deleteRefreshToken(email: String) {
+        val hashKey = "user:refresh_tokens"
+        redisTemplate.opsForHash<String, String>().delete(hashKey, email)
+    }
+
+    // JWT 블랙리스트에 저장 (key: "blacklist:jwt:<token>")
+    // 인자로 받은 만료 시간(expireTimeMillis)을 사용하여 TTL을 JWT 만료 시간과 같게 설정
+    fun addToJwtBlacklist(jwt: String, expireTimeMillis: Long) {
+        val key = "blacklist:jwt:$jwt"
+        redisTemplate.opsForValue().set(key, "true", expireTimeMillis, TimeUnit.MILLISECONDS)
+    }
+
+    fun isJwtBlacklisted(jwt: String): Boolean {
+        val key = "blacklist:jwt:$jwt"
+        return redisTemplate.hasKey(key) ?: false
+    }
 }
